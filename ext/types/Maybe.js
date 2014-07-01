@@ -9,6 +9,7 @@ var util = require('./util'),
 function Maybe (x) {
     return isNil (x) ? new Nothing() : new Just (x);
 }
+
 /**
  * @class
  * @extends Maybe
