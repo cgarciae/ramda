@@ -1,5 +1,4 @@
 var util = require('./util'),
-    isNil = util.isNil,
     returnThis = util.returnThis;
 /**
  * @constructor
@@ -7,7 +6,7 @@ var util = require('./util'),
  * @returns {Maybe}
  */
 function Maybe (x) {
-    return isNil (x) ? new Nothing() : new Just (x);
+    return x == null ? new Nothing() : new Just (x);
 }
 
 /**
@@ -17,11 +16,14 @@ function Maybe (x) {
  * @param {*} x
  */
 function Just (x) {
+    if (!(this instanceof Just)) {
+        return new Just(x);
+    }
     this.value = x;
 }
 /**
  * @class
- * @extends Maybe
+ * @extends MaybeRamda
  */
 function Nothing () {
 
@@ -29,7 +31,7 @@ function Nothing () {
 // applicative
 /**
  * @param x
- * @returns {Maybe}
+ * @returns {MaybeRamda}
  */
 Nothing.prototype.of = Just.prototype.of = function of (x) {
     return Maybe (x);
@@ -94,7 +96,7 @@ Nothing.prototype.chain = returnThis;
 
 // equality method to enable testing
 /**
- * @param {Maybe} m
+ * @param {MaybeRamda} m
  * @returns {bool}
  */
 Just.prototype.equals = Nothing.prototype.equals = function (m) {

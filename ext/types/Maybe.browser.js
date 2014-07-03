@@ -1,12 +1,8 @@
 var util = {
-        isNil: function(x) {
-        return x === null || x === undefined || x !== x; // crazy NaN check
-        },
         returnThis : function () {
             return this;
         }
     },
-    isNil = util.isNil,
     returnThis = util.returnThis;
 /**
  * @constructor
@@ -14,7 +10,7 @@ var util = {
  * @returns {Maybe}
  */
 function Maybe (x) {
-    return isNil (x) ? new Nothing() : new Just (x);
+    return x == null ? new Nothing() : new Just (x);
 }
 /**
  * @class
@@ -23,6 +19,9 @@ function Maybe (x) {
  * @param {*} x
  */
 function Just (x) {
+    if (!(this instanceof Just)) {
+        return new Just(x);
+    }
     this.value = x;
 }
 /**
@@ -30,16 +29,16 @@ function Just (x) {
  * @extends Maybe
  */
 function Nothing () {
-
+    if (!(this instanceof Nothing)) {
+        return new Nothing();
+    }
 }
 // applicative
 /**
  * @param x
  * @returns {Maybe}
  */
-Nothing.prototype.of = Just.prototype.of = function of (x) {
-    return Maybe (x);
-};
+Nothing.prototype.of = Just.prototype.of = Maybe.of = Maybe;
 
 // functor
 /**
