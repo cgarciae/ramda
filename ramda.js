@@ -16,7 +16,7 @@
 //  [umd]: https://github.com/umdjs/umd/blob/master/returnExports.js
 
 (function (root, factory) {if (typeof exports === 'object') {module.exports = factory(root);} else if (typeof define === 'function' && define.amd) {define(factory);} else {root.ramda = factory(root);}}(this, function (global) {
-
+    
     "use strict";
     return  (function() {
         // This object is what is actually returned, with all the exposed functions attached as properties.
@@ -26,8 +26,7 @@
         // Internal Functions and Properties
         // ---------------------------------
 
-        var undef = (function () {
-        })(), EMPTY;
+        var undef = (function () {})();
 
         // Makes a public alias for one of the public functions:
         var aliasFor = function (oldName) {
@@ -114,15 +113,6 @@
             };
             curried.source = source;
             return curried;
-        }
-
-        // Internal function to set the the string representation of composite functions
-        // useful for debugging purposes
-        function setCompositeRepr (composition, f, g) {
-            composition.toString = function() {
-                return f.toString() + '\n' + '\n' + 'OF' + '\n' + '\n' + f.toString();
-            };
-            return composition;
         }
 
         // Optimized internal curriers
@@ -367,9 +357,6 @@
         // --------------
         //
 
-        //   Prototypical (or only) empty list
-        EMPTY = [];
-
         // Boolean function which reports whether a list is empty.
         var isEmpty = R.isEmpty = function (arr) {
             return !arr || !arr.length;
@@ -383,14 +370,14 @@
 
         //  Returns the first element of a list
         var head = R.head = function (arr) {
-            arr = arr || EMPTY;
+            arr = arr || [];
             return arr[0];
         };
         aliasFor("head").is("car").and("first");
 
         //  Returns the last element of a list
         R.last = function (arr) {
-            arr = arr || EMPTY;
+            arr = arr || [];
             return arr[arr.length - 1];
         };
 
@@ -398,7 +385,7 @@
         // If the passed-in list is not annary, but is an object with a `tail` method, 
         // it will return object.tail().
         var tail = R.tail = function (arr) {
-            arr = arr || EMPTY;
+            arr = arr || [];
             if (hasMethod('tail', arr)) {
                 return arr.tail();
             }
@@ -447,9 +434,9 @@
         //Basic composition function, takes 2 functions and returns the composite function. Its mainly used to build
         //the more general compose function, which takes any number of functions.
         var internalCompose = function(f, g) {
-            return setCompositeRepr( function () {
+            return function () {
                 return f(g.apply(this, arguments));
-            }, f, g);
+            };
         };
 
         // Creates a new function that runs each of the functions supplied as parameters in turn, passing the output
@@ -473,10 +460,10 @@
 
         // Returns a new function much like the supplied one except that the first two arguments are inverted.
         var flip = R.flip = function (fn) {
-            return function (a, b) {
-                return arguments.length < 2 ?
-                    function(b) { return fn.apply(this, [b, a].concat(_slice(arguments, 1))); } :
-                    fn.apply(this, [b, a].concat(_slice(arguments, 2)));
+            return function (a, b) {  
+                return arguments.length < 2 ? 
+                  function(b) { return fn.apply(this, [b, a].concat(_slice(arguments, 1))); } :
+                  fn.apply(this, [b, a].concat(_slice(arguments, 2)));
             };
         };
 
@@ -596,7 +583,7 @@
             return acc;
         });
         aliasFor("foldl").is("reduce");
-
+        
         // Like `foldl`, but passes additional parameters to the predicate function.  Parameters are
         // `list item`, `index of item in list`, `entire list`.
         //
@@ -974,11 +961,9 @@
 
         // Returns a new list containing only one copy of each element in the original list.  Equality is strict here,
         // meaning reference equality for objects and non-coercing equality for primitives.
-        var uniq = R.uniq = function (list) {
-            return foldr(function (acc, x) {
-                return (contains(x, acc)) ? acc : prepend(x, acc);
-            }, EMPTY, list);
-        };
+        var uniq = R.uniq = foldr(function (acc, x) {
+            return (contains(x, acc)) ? acc : prepend(x, acc);
+        }, []);
 
         // returns `true` if all of the elements in the `list` are unique.
         R.isSet = function (list) {
@@ -991,7 +976,7 @@
         var uniqWith = R.uniqWith = curry2(function(pred, list) {
             return foldr(function (acc, x) {
                 return (containsWith(pred, x, acc)) ? acc : prepend(x, acc);
-            }, EMPTY, list);
+            }, [], list);
         });
 
 
@@ -1007,18 +992,18 @@
         var flatten = R.flatten = function(list) {
             var output = [], idx = 0, value;
             for (var i = 0, length = list.length; i < length; i++) {
-                value = list[i];
-                if (isArray(value)) {
-                    //flatten current level of array or arguments object
-                    value = flatten(value);
-                    var j = 0, len = value.length;
-                    output.length += len;
-                    while (j < len) {
-                        output[idx++] = value[j++];
-                    }
-                } else {
-                    output[idx++] = value;
+              value = list[i];
+              if (isArray(value)) {
+                //flatten current level of array or arguments object
+                value = flatten(value);
+                var j = 0, len = value.length;
+                output.length += len;
+                while (j < len) {
+                  output[idx++] = value[j++];
                 }
+              } else {
+                output[idx++] = value;
+              }
             }
             return output;
         };
@@ -1060,7 +1045,7 @@
         //     //    => [f(1, 'a'), f(1, 'b'), f(2, 'a'), f(2, 'b')];
         R.xprodWith = curry3(function (fn, a, b) {
             if (isEmpty(a) || isEmpty(b)) {
-                return EMPTY;
+                return [];
             }
             var i = -1, ilen = a.length, j, jlen = b.length, result = []; // better to push them all or to do `new Array(ilen * jlen)` and calculate indices?
             while (++i < ilen) {
@@ -1078,7 +1063,7 @@
         //     //    => [[1, 'a'], [1, 'b')], [2, 'a'], [2, 'b']];
         R.xprod = curry2(function (a, b) { // = xprodWith(prepend); (takes about 3 times as long...)
             if (isEmpty(a) || isEmpty(b)) {
-                return EMPTY;
+                return [];
             }
             var i = -1;
             var ilen = a.length;
@@ -1106,7 +1091,7 @@
         //     range(50, 53) // => [50, 51, 52]
         R.range = curry2(function (from, to) {
             if (from >= to) {
-                return EMPTY;
+                return [];
             }
             var idx = 0, result = new Array(Math.floor(to) - Math.ceil(from));
             for (; from < to; idx++, from++) {
@@ -1149,7 +1134,7 @@
 
         // Returns the `n`th element of a list (zero-indexed)
         R.nth = function (n, list) {
-            return arguments.length < 2 ? function _nth(list) { return list[n]; } : list[n];
+             return arguments.length < 2 ? function _nth(list) { return list[n]; } : list[n];
         };
 
         // Makes a comparator function out of a function that reports whether the first element is less than the second.
@@ -1259,12 +1244,16 @@
             return val === null || val === undef;
         });
 
+        var hasOwnProperty = Object.prototype.hasOwnProperty;
+        var nativeKeys = Object.keys;
+
         // Returns a list containing the names of all the enumerable own
         // properties of the supplied object.
         var keys = R.keys = function (obj) {
+            if (nativeKeys) return nativeKeys(Object(obj));
             var prop, ks = [];
             for (prop in obj) {
-                if (obj.hasOwnProperty(prop)) {
+                if (hasOwnProperty.call(obj, prop)) {
                     ks.push(prop);
                 }
             }
@@ -1282,14 +1271,14 @@
         };
 
         // Returns a list of all the enumerable own properties of the supplied object.
-        R.values = function(obj) {
-            var prop, vs = [];
-            for (prop in obj) {
-                if (obj.hasOwnProperty(prop)) {
-                    vs.push(obj[prop]);
-                }
+        R.values = function (obj) {
+            var prop, props = keys(obj),
+                length = props.length,
+                vals = new Array(length);
+            for (var i = 0; i < length; i++) {
+                vals[i] = obj[props[i]];
             }
-            return vs;
+            return vals;
         };
 
         // Returns a list of all the properties, including prototype properties, 
@@ -1303,23 +1292,35 @@
         };
 
         // internal helper function
-        var partialCopy = function (test, obj) {
-            var copy = {};
-            each(function (key) {
-                if (test(key, obj)) {
-                    copy[key] = obj[key];
+        function pickWith(test, obj) {
+            var copy = {},
+                props = keys(obj), prop, val;
+            for (var i = 0, len = props.length; i < len; i++) {
+                prop = props[i];
+                val = obj[prop];
+                if (test(val, prop, obj)) {
+                    copy[prop] = val;
                 }
-            }, keys(obj));
+            }
             return copy;
-        };
+        }
 
         // Returns a partial copy of an object containing only the keys specified.  If the key does not exist, the
         // property is ignored
-        R.pick = curry2(function (names, obj) {
-            return partialCopy(function (key) {
+        R.pick = curry2(function pick(names, obj) {
+            return pickWith(function(val, key) {
                 return contains(key, names);
             }, obj);
         });
+
+        // Returns a partial copy of an object omitting the keys specified.
+        R.omit = curry2(function omit(names, obj) {
+            return pickWith(function(val, key) {
+                return !contains(key, names);
+            }, obj);
+        });
+
+        R.pickWith = curry2(pickWith);
 
         // Similar to `pick` except that this one includes a `key: undefined` pair for properties that don't exist.
         var pickAll = function (names, obj) {
@@ -1331,13 +1332,6 @@
         };
 
         R.pickAll = curry2(pickAll);
-
-        // Returns a partial copy of an object omitting the keys specified.
-        R.omit = curry2(function(names, obj) {
-            return partialCopy(function (key) {
-                return !contains(key, names);
-            }, obj);
-        });
 
         // Returns a new object that mixes in the own properties of two objects.
         R.mixin = curry2(function(a, b) {
@@ -1356,9 +1350,9 @@
                 };
                 return arguments.length < 2 ? f2 : f2(obj2);
             };
-            return arguments.length < 2 ? f1 :
-                    arguments.length < 3 ? f1(obj1) :
-                f1(obj1, obj2);
+            return arguments.length < 2 ? f1 : 
+                arguments.length < 3 ? f1(obj1) :
+                    f1(obj1, obj2);
         };
 
 
@@ -1385,29 +1379,32 @@
         //     var fxs = filter(where({x: 10}), xs); 
         //     // fxs ==> [{x: 10, y: 2}, {x: 10, y: 4}]
         //
-        R.where = curry2(function(spec, test) {
+        R.where = function(spec, test) {
             function isFn(key) {return typeof spec[key] === 'function';}
             var specKeys = keys(spec);
             var fnKeys = filter(isFn, specKeys);
             var objKeys = reject(isFn, specKeys);
-            if (!test) { return false; }
-            var i = -1, key;
-            while (++i < fnKeys.length) {
-                key = fnKeys[i];
-                if (!spec[key](test[key], test)) {
-                    return false;
+            var process = function(test) {
+                if (!test) { return false; }
+                var i = -1, key;
+                while (++i < fnKeys.length) {
+                    key = fnKeys[i];
+                    if (!spec[key](test[key], test)) {
+                        return false;
+                    }
                 }
-            }
-            i = -1;
-            while (++i < objKeys.length) {
-                key = objKeys[i];
-                // if (test[key] !== spec[key]) {  // TODO: discuss Scott's objections
-                if (!test.hasOwnProperty(key) || test[key] !== spec[key]) {
-                    return false;
+                i = -1;
+                while (++i < objKeys.length) {
+                    key = objKeys[i];
+                    // if (test[key] !== spec[key]) {  // TODO: discuss Scott's objections
+                    if (!test.hasOwnProperty(key) || test[key] !== spec[key]) {
+                        return false;
+                    }
                 }
-            }
-            return true;
-        });
+                return true;
+            };
+            return (arguments.length > 1) ? process(test) : process;
+        };
 
         // Miscellaneous Functions
         // -----------------------
@@ -1446,10 +1443,10 @@
         // A function wrapping calls to the two functions in an `&&` operation, returning `true` or `false`.  Note that
         // this is short-circuited, meaning that the second function will not be invoked if the first returns a false-y
         // value.
-        R.and = function(f, g) {
-            function _and(g) {
-                return function() {return !!(f.apply(this, arguments) && g.apply(this, arguments));};
-            }
+        R.and = function(f, g) { 
+           function _and(g) {
+               return function() {return !!(f.apply(this, arguments) && g.apply(this, arguments));};
+           }
             return arguments.length < 2 ? _and : _and(g);
         };
 
@@ -1457,9 +1454,9 @@
         // this is short-circuited, meaning that the second function will not be invoked if the first returns a truth-y
         // value. (Note also that at least Oliver Twist can pronounce this one...)
         R.or = function(f, g) { // TODO: arity?
-            function _or(g) {
-                return function() {return !!(f.apply(this, arguments) || g.apply(this, arguments));};
-            }
+           function _or(g) {
+               return function() {return !!(f.apply(this, arguments) || g.apply(this, arguments));};
+           }
             return arguments.length < 2 ? _or : _or(g);
         };
 
@@ -1479,10 +1476,10 @@
                     }, preds);
                 };
                 return arguments.length > 1 ?
-                    // Call function imediately if given arguments
-                    predIterator.apply(null, _slice(arguments, 1)) :
-                    // Return a function which will call the predicates with the provided arguments
-                    arity(max(pluck("length", preds)), predIterator);
+                        // Call function imediately if given arguments
+                        predIterator.apply(null, _slice(arguments, 1)) :
+                        // Return a function which will call the predicates with the provided arguments
+                        arity(max(pluck("length", preds)), predIterator);
             };
         };
 
@@ -1545,7 +1542,7 @@
         R.divideBy = flip(divide);
 
         // Divides the second parameter by the first and returns the remainder.
-        var modulo = R.modulo = function(a, b) {
+        var modulo = R.modulo = function(a, b) { 
             return arguments.length < 2 ? function(b) { return a % b; } :  a % b;
         };
 
@@ -1591,7 +1588,7 @@
         // Determines the largest of a list of items as determined by pairwise comparisons from the supplied comparator
         R.maxWith = curry2(function(keyFn, list) {
             if (!(list && list.length > 0)) {
-                return undef;
+               return undef;
             }
             var idx = 0, winner = list[idx], max = keyFn(winner), testKey;
             while (++idx < list.length) {
@@ -1764,8 +1761,8 @@
                 return arguments.length < 2 ? f2 : f2(obj);
             };
             return arguments.length < 2 ? f1 :
-                    arguments.length < 3 ? f1(val) :
-                f1(val, obj);
+                arguments.length < 3 ? f1(val) :
+                    f1(val, obj);
         };
 
         // Combines two lists into a set (i.e. no duplicates) composed of the elements of each list.
@@ -1793,8 +1790,8 @@
                 return arguments.length < 2 ? f2 : f2(second);
             };
             return arguments.length < 2 ? f1 :
-                    arguments.length < 3 ? f1(first) :
-                f1(first, second);
+                arguments.length < 3 ? f1(first) :
+                    f1(first, second);
         };
 
         // Combines two lists into a set (i.e. no duplicates) composed of those elements common to both lists.
@@ -1822,8 +1819,8 @@
                 return arguments.length < 2 ? f2 : f2(list2);
             };
             return arguments.length < 2 ? f1 :
-                    arguments.length < 3 ? f1(list1) :
-                f1(list1, list2);
+                arguments.length < 3 ? f1(list1) :
+                    f1(list1, list2);
         };
 
         // Creates a new list whose elements each have two properties: `val` is the value of the corresponding
@@ -1838,9 +1835,9 @@
         // Sorts the list according to a key generated by the supplied function.
         R.sortBy = function(fn, list) {
             /*
-             return sort(comparator(function(a, b) {return fn(a) < fn(b);}), list); // clean, but too time-inefficient
-             return pluck("val", sort(comparator(function(a, b) {return a.key < b.key;}), keyValue(fn, list))); // nice, but no need to clone result of keyValue call, so...
-             */
+              return sort(comparator(function(a, b) {return fn(a) < fn(b);}), list); // clean, but too time-inefficient
+              return pluck("val", sort(comparator(function(a, b) {return a.key < b.key;}), keyValue(fn, list))); // nice, but no need to clone result of keyValue call, so...
+            */
             function _sortBy(list) {
                 return pluck("val", keyValue(fn, list).sort(comparator(function(a, b) {return a.key < b.key;})));
             }
