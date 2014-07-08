@@ -68,6 +68,15 @@
             return foldl (fn, empty, arguments);
         };
 
+        // concatAll :: [[a]] -> [a]
+        // concatAll takes a list of lists or a list of strings and returns a list or string with the concatenation of
+        // all the elements in input list
+        var concatAll = R.concatAll = function (list) {
+            //Check if only one element because of concat's currying.
+            return list.length === 1 ? list[0] : concat.apply (this, list);
+        };
+
+
         // (private)
         var toString = Object.prototype.toString;
         var isArray = Array.isArray || function (val) {
